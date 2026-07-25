@@ -908,30 +908,49 @@ select.field {
     font-size: 13px;
   }
   .hero-body {
-    gap: 12px 16px;
+    gap: 12px;
     align-items: center;
   }
-  .hero-score {
+  /* всё в один ряд на всех языках, как в узбекском */
+  .hero-row {
+    flex-wrap: nowrap;
     gap: 10px;
   }
+  .hero-score {
+    gap: 8px;
+    flex: none;
+  }
   .hero-num {
-    font-size: 40px;
+    font-size: 33px;
   }
   .hero-scale {
-    font-size: 15px;
+    font-size: 13px;
   }
-  .hero-label {
-    font-size: 12.5px;
+  .status-pill {
+    font-size: 10.5px;
+    padding: 2px 8px 2px 4px;
+    gap: 4px;
+  }
+  .st-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 9px;
   }
   .hero-stats {
     margin-left: auto;
+    gap: 7px;
+    flex: none;
   }
   .stat {
     min-width: 0;
-    padding: 8px 12px;
+    padding: 6px 10px;
   }
   .stat b {
-    font-size: 20px;
+    font-size: 17px;
+  }
+  .stat span {
+    font-size: 10px;
+    white-space: nowrap;
   }
   .hero-note {
     padding-top: 12px;

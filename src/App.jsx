@@ -217,7 +217,7 @@ export default function App() {
                   {status && (
                     <span className={'status-pill st-' + status.cls}>
                       <span className="st-icon">{status.icon}</span>
-                      {status.text}
+                      <span className="st-text">{status.text}</span>
                     </span>
                   )}
                 </div>
