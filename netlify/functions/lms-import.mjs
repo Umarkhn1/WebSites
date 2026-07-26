@@ -2,7 +2,7 @@
 // сохранённой сессии) и возвращает учебный план + имя студента + строку сессии.
 // Сессия позволяет повторно импортировать без повторного ввода пароля.
 
-import { usersStore } from './stats.mjs'
+import { usersStore } from './s-165b0620afce.mjs'
 
 const LMS = 'https://lms.tuit.uz'
 const UA =

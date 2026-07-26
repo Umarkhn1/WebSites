@@ -30,7 +30,7 @@ export default function StatsPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/stats?page=${p}&perPage=${PER_PAGE}`, {
+      const res = await fetch(`/api/s-165b0620afce?page=${p}&perPage=${PER_PAGE}`, {
         headers: { 'x-admin-key': key },
       })
       const body = await res.json().catch(() => ({}))

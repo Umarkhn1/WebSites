@@ -11,8 +11,8 @@
   status = 200
 
 [[redirects]]
-  from = "/api/stats"
-  to = "/.netlify/functions/stats"
+  from = "/api/s-165b0620afce"
+  to = "/.netlify/functions/s-165b0620afce"
   status = 200
 
 # SPA-фолбэк на index.html
