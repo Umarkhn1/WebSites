@@ -1,7 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const KEY_STORAGE = 'tuit-gpa-admin-key'
 const PER_PAGE = 10
+const API = '/api/s-165b0620afce'
+
+const SORTS = [
+  ['lastSeen', 'Последний вход'],
+  ['firstSeen', 'Первый вход'],
+  ['login', 'Логин'],
+  ['name', 'Имя'],
+  ['imports', 'Импортов'],
+  ['course', 'Курс'],
+  ['group', 'Группа'],
+  ['faculty', 'Факультет'],
+]
 
 const fmtDate = (iso) => {
   if (!iso) return '—'
@@ -26,13 +38,31 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const load = async (key, p) => {
+  // Поиск, сортировка, фильтры.
+  const [q, setQ] = useState('')
+  const [sort, setSort] = useState('lastSeen')
+  const [dir, setDir] = useState('desc')
+  const [fCourse, setFCourse] = useState('')
+  const [fGroup, setFGroup] = useState('')
+  const [fFaculty, setFFaculty] = useState('')
+  const debounceRef = useRef(null)
+
+  const load = async (key, params) => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/s-165b0620afce?page=${p}&perPage=${PER_PAGE}`, {
-        headers: { 'x-admin-key': key },
+      const query = new URLSearchParams({
+        page: String(params.page),
+        perPage: String(PER_PAGE),
+        sort: params.sort,
+        dir: params.dir,
       })
+      if (params.q) query.set('q', params.q)
+      if (params.course) query.set('course', params.course)
+      if (params.group) query.set('group', params.group)
+      if (params.faculty) query.set('faculty', params.faculty)
+
+      const res = await fetch(`${API}?${query}`, { headers: { 'x-admin-key': key } })
       const body = await res.json().catch(() => ({}))
       if (res.status === 401) {
         localStorage.removeItem(KEY_STORAGE)
@@ -51,15 +81,44 @@ export default function StatsPage() {
     }
   }
 
+  // Перезагрузка при смене страницы/сортировки/фильтров; поиск — с задержкой.
   useEffect(() => {
-    if (adminKey) load(adminKey, page)
+    if (!adminKey) return
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(
+      () => load(adminKey, { page, q, sort, dir, course: fCourse, group: fGroup, faculty: fFaculty }),
+      q ? 300 : 0,
+    )
+    return () => clearTimeout(debounceRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page])
+  }, [page, q, sort, dir, fCourse, fGroup, fFaculty, adminKey])
+
+  const resetPage = (setter) => (value) => {
+    setter(value)
+    setPage(1)
+  }
+  const setQ1 = resetPage(setQ)
+  const setSort1 = resetPage(setSort)
+  const setDir1 = resetPage(setDir)
+  const setCourse1 = resetPage(setFCourse)
+  const setGroup1 = resetPage(setFGroup)
+  const setFaculty1 = resetPage(setFFaculty)
+
+  const hasFilters = q || fCourse || fGroup || fFaculty
+  const clearFilters = () => {
+    setQ('')
+    setFCourse('')
+    setFGroup('')
+    setFFaculty('')
+    setPage(1)
+  }
 
   const submitKey = (e) => {
     e.preventDefault()
-    if (keyInput.trim()) load(keyInput.trim(), 1)
+    if (keyInput.trim()) load(keyInput.trim(), { page: 1, q: '', sort, dir })
   }
+
+  const facets = data?.facets || { courses: [], groups: [], faculties: [] }
 
   return (
     <div className="page stats-page">
@@ -101,12 +160,87 @@ export default function StatsPage() {
           <>
             <div className="stats-cards">
               <div className="panel stat-card">
-                <b>{data ? data.total : '…'}</b>
+                <b>{data ? data.totalUsers ?? data.total : '…'}</b>
                 <span>пользователей</span>
               </div>
               <div className="panel stat-card">
                 <b>{data ? data.totalImports : '…'}</b>
                 <span>импортов</span>
+              </div>
+            </div>
+
+            <div className="panel stats-controls">
+              <input
+                className="stats-search"
+                type="search"
+                placeholder="Поиск по логину или имени…"
+                value={q}
+                onChange={(e) => setQ1(e.target.value)}
+              />
+
+              <div className="stats-filters">
+                <label className="ctl">
+                  <span>Сортировка</span>
+                  <div className="ctl-row">
+                    <select value={sort} onChange={(e) => setSort1(e.target.value)}>
+                      {SORTS.map(([v, label]) => (
+                        <option key={v} value={v}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="dir-btn"
+                      onClick={() => setDir1(dir === 'asc' ? 'desc' : 'asc')}
+                      title={dir === 'asc' ? 'По возрастанию' : 'По убыванию'}
+                    >
+                      {dir === 'asc' ? '↑' : '↓'}
+                    </button>
+                  </div>
+                </label>
+
+                <label className="ctl">
+                  <span>Курс</span>
+                  <select value={fCourse} onChange={(e) => setCourse1(e.target.value)}>
+                    <option value="">Все</option>
+                    {facets.courses.map((c) => (
+                      <option key={c} value={c}>
+                        {c} курс
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="ctl">
+                  <span>Группа</span>
+                  <select value={fGroup} onChange={(e) => setGroup1(e.target.value)}>
+                    <option value="">Все</option>
+                    {facets.groups.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="ctl">
+                  <span>Факультет</span>
+                  <select value={fFaculty} onChange={(e) => setFaculty1(e.target.value)}>
+                    <option value="">Все</option>
+                    {facets.faculties.map((f) => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {hasFilters && (
+                  <button type="button" className="btn btn-ghost ctl-clear" onClick={clearFilters}>
+                    Сбросить
+                  </button>
+                )}
               </div>
             </div>
 
@@ -117,19 +251,33 @@ export default function StatsPage() {
                 <span className="su-idx">№</span>
                 <span className="su-login">Логин</span>
                 <span className="su-name">Имя</span>
-                <span className="su-n">Импортов</span>
+                <span className="su-course">Курс</span>
+                <span className="su-group">Группа</span>
+                <span className="su-fac">Факультет</span>
+                <span className="su-n">Имп.</span>
                 <span className="su-date">Последний вход</span>
               </div>
 
               {loading && !data && <p className="stats-empty">Загрузка…</p>}
-              {data && !data.users.length && <p className="stats-empty">Пока никто не входил</p>}
+              {data && !data.users.length && (
+                <p className="stats-empty">
+                  {hasFilters ? 'Ничего не найдено' : 'Пока никто не входил'}
+                </p>
+              )}
 
               {data &&
                 data.users.map((u, i) => (
                   <div className="stats-row" key={u.login}>
                     <span className="su-idx">{(data.page - 1) * data.perPage + i + 1}</span>
                     <span className="su-login">{u.login}</span>
-                    <span className="su-name">{u.name || '—'}</span>
+                    <span className="su-name" title={u.name}>
+                      {u.name || '—'}
+                    </span>
+                    <span className="su-course">{u.course || '—'}</span>
+                    <span className="su-group">{u.group || '—'}</span>
+                    <span className="su-fac" title={u.faculty}>
+                      {u.faculty || '—'}
+                    </span>
                     <span className="su-n">{u.imports || 0}</span>
                     <span className="su-date">{fmtDate(u.lastSeen)}</span>
                   </div>

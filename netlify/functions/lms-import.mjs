@@ -74,7 +74,33 @@ function parseStudent(html) {
   const tokens = full.split(/\s+/).filter(Boolean)
   // Формат: Фамилия Имя Отчество [o‘g‘li/qizi] → имя это второе слово.
   const name = tokens[1] || tokens[0] || ''
-  return { full, name }
+
+  // Профиль: ищем пары «метка → значение» в строках таблиц (ru/uz/en метки).
+  let group = ''
+  let faculty = ''
+  let course = ''
+  const rows = html.match(/<tr[\s\S]*?<\/tr>/g) || []
+  for (const row of rows) {
+    const cells = (row.match(/<t[dh][\s\S]*?<\/t[dh]>/g) || []).map(strip)
+    if (cells.length < 2) continue
+    const label = cells[0].toLowerCase()
+    const value = cells.slice(1).find(Boolean) || ''
+    if (!value) continue
+    if (!faculty && /факультет|fakultet|faculty/.test(label)) faculty = value
+    else if (!group && /группа|guruh|group/.test(label)) group = value
+    else if (!course && /курс|kurs|bosqich|course/.test(label)) course = value
+  }
+  // Запасной вариант: классы вида si-student-group / si-student-faculty.
+  if (!group) {
+    const g = html.match(/si-student-group"[^>]*>([^<]+)</)
+    if (g) group = strip(g[1])
+  }
+  if (!faculty) {
+    const f = html.match(/si-student-faculty"[^>]*>([^<]+)</)
+    if (f) faculty = strip(f[1])
+  }
+  const courseNum = parseInt(String(course).match(/\d+/)?.[0], 10)
+  return { full, name, group, faculty, course: Number.isNaN(courseNum) ? '' : courseNum }
 }
 
 const json = (statusCode, body) => ({
@@ -85,16 +111,22 @@ const json = (statusCode, body) => ({
 
 // Журнал пользователей для страницы /stats: логин, имя, время первого и
 // последнего входа, число импортов. Пароли не сохраняются никогда.
-async function recordUser(event, loginId, student) {
+async function recordUser(event, loginId, student, semesters) {
   try {
     const store = usersStore(event)
     const key = String(loginId).trim().toLowerCase()
     if (!key) return
     const now = new Date().toISOString()
     const prev = await store.get(key, { type: 'json' }).catch(() => null)
+    // Курс: из профиля, иначе по числу семестров с оценками (2 семестра = курс).
+    const gradedSem = semesters.filter((s) => s.courses.some((c) => c.grade)).length
+    const course = student.course || prev?.course || Math.max(1, Math.ceil(gradedSem / 2))
     await store.setJSON(key, {
       login: key,
       name: student.full || student.name || prev?.name || '',
+      group: student.group || prev?.group || '',
+      faculty: student.faculty || prev?.faculty || '',
+      course,
       firstSeen: prev?.firstSeen || now,
       lastSeen: now,
       imports: (prev?.imports || 0) + 1,
@@ -184,7 +216,7 @@ export const handler = async (event) => {
       if (infoRes.status === 200) student = parseStudent(await infoRes.text())
     } catch {}
 
-    if (login_) await recordUser(event, login_, student)
+    if (login_) await recordUser(event, login_, student, semesters)
 
     return json(200, { semesters, student, session: cookieHeader(cookies) })
   } catch (e) {
