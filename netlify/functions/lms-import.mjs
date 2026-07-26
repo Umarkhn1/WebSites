@@ -2,7 +2,7 @@
 // сохранённой сессии) и возвращает учебный план + имя студента + строку сессии.
 // Сессия позволяет повторно импортировать без повторного ввода пароля.
 
-import { getStore } from '@netlify/blobs'
+import { usersStore } from './stats.mjs'
 
 const LMS = 'https://lms.tuit.uz'
 const UA =
@@ -85,9 +85,9 @@ const json = (statusCode, body) => ({
 
 // Журнал пользователей для страницы /stats: логин, имя, время первого и
 // последнего входа, число импортов. Пароли не сохраняются никогда.
-async function recordUser(loginId, student) {
+async function recordUser(event, loginId, student) {
   try {
-    const store = getStore('users')
+    const store = usersStore(event)
     const key = String(loginId).trim().toLowerCase()
     if (!key) return
     const now = new Date().toISOString()
@@ -184,7 +184,7 @@ export const handler = async (event) => {
       if (infoRes.status === 200) student = parseStudent(await infoRes.text())
     } catch {}
 
-    if (login_) await recordUser(login_, student)
+    if (login_) await recordUser(event, login_, student)
 
     return json(200, { semesters, student, session: cookieHeader(cookies) })
   } catch (e) {

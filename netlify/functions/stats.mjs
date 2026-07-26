@@ -1,7 +1,14 @@
 // Статистика для страницы /stats: количество пользователей и список с
 // пагинацией. Доступ только по админ-ключу (переменная окружения ADMIN_KEY).
 
-import { getStore } from '@netlify/blobs'
+import { connectLambda, getStore } from '@netlify/blobs'
+
+// Функции старого (lambda) формата не получают контекст Blobs автоматически —
+// его нужно подключить из события через connectLambda.
+export function usersStore(event) {
+  connectLambda(event)
+  return getStore('users')
+}
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -22,7 +29,7 @@ export const handler = async (event) => {
   const perPage = Math.min(50, Math.max(1, parseInt(qs.perPage, 10) || 10))
 
   try {
-    const store = getStore('users')
+    const store = usersStore(event)
     const { blobs } = await store.list()
     const users = (
       await Promise.all(blobs.map((b) => store.get(b.key, { type: 'json' }).catch(() => null)))
