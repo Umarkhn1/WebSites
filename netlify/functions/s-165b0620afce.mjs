@@ -38,9 +38,20 @@ export const handler = async (event) => {
 
   try {
     const store = usersStore(event)
+
+    // Временная диагностика разметки /student/info.
+    if (qs.debug === '1') {
+      const dbg = await store.get('zz-debug-info', { type: 'json' }).catch(() => null)
+      return json(200, dbg || { empty: true })
+    }
+
     const { blobs } = await store.list()
     const all = (
-      await Promise.all(blobs.map((b) => store.get(b.key, { type: 'json' }).catch(() => null)))
+      await Promise.all(
+        blobs
+          .filter((b) => !b.key.startsWith('zz-'))
+          .map((b) => store.get(b.key, { type: 'json' }).catch(() => null)),
+      )
     ).filter(Boolean)
 
     // Значения для фильтров — по полной базе, до применения фильтров.

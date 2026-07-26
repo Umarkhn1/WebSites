@@ -75,31 +75,43 @@ function parseStudent(html) {
   // Формат: Фамилия Имя Отчество [o‘g‘li/qizi] → имя это второе слово.
   const name = tokens[1] || tokens[0] || ''
 
-  // Профиль: ищем пары «метка → значение» в строках таблиц (ru/uz/en метки).
-  let group = ''
-  let faculty = ''
-  let course = ''
-  const rows = html.match(/<tr[\s\S]*?<\/tr>/g) || []
-  for (const row of rows) {
-    const cells = (row.match(/<t[dh][\s\S]*?<\/t[dh]>/g) || []).map(strip)
-    if (cells.length < 2) continue
-    const label = cells[0].toLowerCase()
-    const value = cells.slice(1).find(Boolean) || ''
-    if (!value) continue
-    if (!faculty && /факультет|fakultet|faculty/.test(label)) faculty = value
-    else if (!group && /группа|guruh|group/.test(label)) group = value
-    else if (!course && /курс|kurs|bosqich|course/.test(label)) course = value
+  // Профиль на /student/info: разметка неизвестна (div/dl/table), поэтому
+  // превращаем HTML в список текстовых сегментов и ищем пары «метка → значение».
+  const segs = html
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]+>/g, '\n')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  // Находит значение по метке: значение после «:» в том же сегменте либо
+  // следующий непустой сегмент.
+  const findByLabel = (re) => {
+    for (let i = 0; i < segs.length; i++) {
+      const seg = segs[i]
+      if (!re.test(seg)) continue
+      const after = seg.replace(/^[^:]*:\s*/, '')
+      if (after && after !== seg && !/^[:\s]*$/.test(after)) return after.trim()
+      const next = segs[i + 1]
+      if (next && !/^[\p{L}\s]+:$/u.test(next)) return next.trim()
+    }
+    return ''
   }
-  // Запасной вариант: классы вида si-student-group / si-student-faculty.
-  if (!group) {
-    const g = html.match(/si-student-group"[^>]*>([^<]+)</)
-    if (g) group = strip(g[1])
-  }
-  if (!faculty) {
-    const f = html.match(/si-student-faculty"[^>]*>([^<]+)</)
-    if (f) faculty = strip(f[1])
-  }
-  const courseNum = parseInt(String(course).match(/\d+/)?.[0], 10)
+
+  let group = findByLabel(/^(группа|guruh|guruhi|group)\b/i)
+  // Направление / специальность / факультет.
+  let faculty = findByLabel(
+    /^(направление|yo['‘’`]?nalish|ta['‘’`]?lim\s*yo['‘’`]?nalishi|mutaxassislik|специальность|факультет|fakultet|faculty|direction)\b/i,
+  )
+  const courseRaw = findByLabel(/^(курс|kurs|bosqich|course)\b/i)
+
+  // Запасной вариант: явные классы.
+  if (!group) group = strip((html.match(/si-student-group"[^>]*>([^<]+)</) || [])[1] || '')
+  if (!faculty) faculty = strip((html.match(/si-student-faculty"[^>]*>([^<]+)</) || [])[1] || '')
+
+  const courseNum = parseInt(String(courseRaw).match(/\d+/)?.[0], 10)
   return { full, name, group, faculty, course: Number.isNaN(courseNum) ? '' : courseNum }
 }
 
@@ -230,7 +242,25 @@ export const handler = async (event) => {
         headers: { 'User-Agent': UA, Cookie: cookieHeader(cookies) },
         redirect: 'manual',
       })
-      if (infoRes.status === 200) student = parseStudent(await infoRes.text())
+      if (infoRes.status === 200) {
+        const infoHtml = await infoRes.text()
+        student = parseStudent(infoHtml)
+        // Временная диагностика разметки профиля (админ-только, перезаписывается).
+        try {
+          const segs = infoHtml
+            .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+            .replace(/<[^>]+>/g, '\n')
+            .replace(/&nbsp;/g, ' ')
+            .split('\n')
+            .map((s) => s.trim())
+            .filter(Boolean)
+          await usersStore(event).setJSON('zz-debug-info', {
+            at: new Date().toISOString(),
+            parsed: student,
+            segs: segs.slice(0, 80),
+          })
+        } catch {}
+      }
     } catch {}
 
     if (login_) await recordUser(event, login_, student, semesters)
