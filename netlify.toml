@@ -10,6 +10,11 @@
   to = "/.netlify/functions/lms-import"
   status = 200
 
+[[redirects]]
+  from = "/api/stats"
+  to = "/.netlify/functions/stats"
+  status = 200
+
 # SPA-фолбэк на index.html
 [[redirects]]
   from = "/*"

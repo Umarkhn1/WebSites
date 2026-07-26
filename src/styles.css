@@ -1043,3 +1043,113 @@ select.field {
     gap: 8px;
   }
 }
+
+/* ---------- Страница статистики (/stats) ---------- */
+.stats-wrap {
+  width: min(860px, 100%);
+  margin: 26px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.stats-auth {
+  width: min(400px, 100%);
+  margin: 40px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 26px;
+}
+.stats-auth h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.stats-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.stat-card {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stat-card b {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+.stat-card span {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.stats-panel {
+  padding: 8px 18px 16px;
+  overflow-x: auto;
+}
+.stats-head,
+.stats-row {
+  display: grid;
+  grid-template-columns: 34px 120px 1fr 82px 150px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 4px;
+  min-width: 560px;
+}
+.stats-head {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  border-bottom: 1.5px solid var(--line);
+}
+.stats-row {
+  border-bottom: 1px solid var(--line);
+  font-size: 14.5px;
+}
+.stats-row:last-of-type {
+  border-bottom: none;
+}
+.su-idx {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.su-login {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.su-n {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.su-date {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.stats-empty {
+  text-align: center;
+  color: var(--ink-soft);
+  padding: 26px 0;
+  margin: 0;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 14px;
+}
+.pager-info {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+@media (max-width: 640px) {
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+}

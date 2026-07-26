@@ -2,6 +2,8 @@
 // сохранённой сессии) и возвращает учебный план + имя студента + строку сессии.
 // Сессия позволяет повторно импортировать без повторного ввода пароля.
 
+import { getStore } from '@netlify/blobs'
+
 const LMS = 'https://lms.tuit.uz'
 const UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36'
@@ -81,6 +83,28 @@ const json = (statusCode, body) => ({
   body: JSON.stringify(body),
 })
 
+// Журнал пользователей для страницы /stats: логин, имя, время первого и
+// последнего входа, число импортов. Пароли не сохраняются никогда.
+async function recordUser(loginId, student) {
+  try {
+    const store = getStore('users')
+    const key = String(loginId).trim().toLowerCase()
+    if (!key) return
+    const now = new Date().toISOString()
+    const prev = await store.get(key, { type: 'json' }).catch(() => null)
+    await store.setJSON(key, {
+      login: key,
+      name: student.full || student.name || prev?.name || '',
+      firstSeen: prev?.firstSeen || now,
+      lastSeen: now,
+      imports: (prev?.imports || 0) + 1,
+    })
+  } catch (e) {
+    // Статистика не должна ломать импорт.
+    console.error('recordUser failed:', e.message)
+  }
+}
+
 async function login(cookies, loginId, password) {
   const page = await fetch(`${LMS}/auth/login`, {
     headers: { 'User-Agent': UA },
@@ -159,6 +183,8 @@ export const handler = async (event) => {
       })
       if (infoRes.status === 200) student = parseStudent(await infoRes.text())
     } catch {}
+
+    if (login_) await recordUser(login_, student)
 
     return json(200, { semesters, student, session: cookieHeader(cookies) })
   } catch (e) {
