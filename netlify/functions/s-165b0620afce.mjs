@@ -28,7 +28,7 @@ export const handler = async (event) => {
   const page = Math.max(1, parseInt(qs.page, 10) || 1)
   const perPage = Math.min(50, Math.max(1, parseInt(qs.perPage, 10) || 10))
   const q = String(qs.q || '').trim().toLowerCase()
-  const sort = ['lastSeen', 'firstSeen', 'login', 'name', 'imports', 'course', 'group', 'faculty'].includes(qs.sort)
+  const sort = ['lastSeen', 'firstSeen', 'login', 'name', 'imports', 'course', 'group', 'faculty', 'gpa'].includes(qs.sort)
     ? qs.sort
     : 'lastSeen'
   const dir = qs.dir === 'asc' ? 1 : -1
@@ -62,7 +62,7 @@ export const handler = async (event) => {
     if (fGroup) users = users.filter((u) => String(u.group || '').toLowerCase() === fGroup)
     if (fFaculty) users = users.filter((u) => String(u.faculty || '').toLowerCase() === fFaculty)
 
-    const numeric = sort === 'imports' || sort === 'course'
+    const numeric = sort === 'imports' || sort === 'course' || sort === 'gpa'
     users.sort((a, b) => {
       const va = a[sort]
       const vb = b[sort]

@@ -111,6 +111,21 @@ const json = (statusCode, body) => ({
 
 // Журнал пользователей для страницы /stats: логин, имя, время первого и
 // последнего входа, число импортов. Пароли не сохраняются никогда.
+// Накопительный GPA с 1 курса по текущий (все семестры с оценками).
+// Правило аннулирования: оценка 2 — кредит в знаменатель, баллы не в числитель.
+function overallGpa(semesters) {
+  let cr = 0
+  let pts = 0
+  for (const s of semesters) {
+    for (const c of s.courses) {
+      if (!c.grade) continue
+      cr += c.credit
+      if (c.grade !== 2) pts += c.credit * c.grade
+    }
+  }
+  return cr ? Math.round((pts / cr) * 100) / 100 : 0
+}
+
 async function recordUser(event, loginId, student, semesters) {
   try {
     const store = usersStore(event)
@@ -121,12 +136,14 @@ async function recordUser(event, loginId, student, semesters) {
     // Курс: из профиля, иначе по числу семестров с оценками (2 семестра = курс).
     const gradedSem = semesters.filter((s) => s.courses.some((c) => c.grade)).length
     const course = student.course || prev?.course || Math.max(1, Math.ceil(gradedSem / 2))
+    const gpa = overallGpa(semesters)
     await store.setJSON(key, {
       login: key,
       name: student.full || student.name || prev?.name || '',
       group: student.group || prev?.group || '',
       faculty: student.faculty || prev?.faculty || '',
       course,
+      gpa,
       firstSeen: prev?.firstSeen || now,
       lastSeen: now,
       imports: (prev?.imports || 0) + 1,
