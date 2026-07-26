@@ -81,8 +81,9 @@ export default function App() {
       const cr = parseFloat(c.credit)
       const gr = parseFloat(c.grade)
       if (!Number.isNaN(cr) && cr > 0 && !Number.isNaN(gr)) {
+        // Оценка 2 — предмет аннулирован: кредит идёт в знаменатель, баллы не начисляются.
         credits += cr
-        points += cr * gr
+        if (gr !== 2) points += cr * gr
         counted += 1
       }
     }
@@ -199,14 +200,12 @@ export default function App() {
             ))}
           </div>
 
-          {student?.name && (
-            <div className="hero-greet">
-              <span className="greet-hand">👋</span>
-              <span className="greet-text">
-                {t.greeting}, <b>{student.name}</b>
-              </span>
-            </div>
-          )}
+          <div className="hero-greet">
+            <span className="greet-hand">👋</span>
+            <span className="greet-text">
+              {t.greeting}, <b>{student?.name || t.stranger}</b>
+            </span>
+          </div>
 
           <div className="hero-body">
             <div className="hero-row">

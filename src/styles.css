@@ -722,6 +722,34 @@ select.field {
   border-color: var(--primary-2);
   background: var(--surface);
 }
+.pass-wrap {
+  position: relative;
+  display: flex;
+}
+.pass-wrap input {
+  width: 100%;
+  padding-right: 44px;
+}
+.pass-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.pass-toggle:hover {
+  color: var(--ink);
+  background: var(--field);
+}
 .alert {
   background: rgba(220, 53, 69, 0.1);
   color: var(--red);
