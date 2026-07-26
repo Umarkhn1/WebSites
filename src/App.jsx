@@ -115,15 +115,18 @@ export default function App() {
   }
 
   const gpaText = gpa.toFixed(2)
-  const tone = gpa >= 4.5 ? 'high' : gpa >= 3.5 ? 'mid' : gpa > 0 ? 'low' : 'none'
+  // Пороги: <2.6 — критично (остаётся на второй год), 2.6–3 — норм, 3–4 — хорошо, 4–5 — отлично.
+  const tone = gpa >= 4 ? 'high' : gpa >= 3 ? 'mid' : gpa >= 2.6 ? 'ok' : gpa > 0 ? 'low' : 'none'
   const status =
     tone === 'high'
       ? { cls: 'excellent', icon: '★', text: t.stExcellent }
       : tone === 'mid'
         ? { cls: 'good', icon: '✓', text: t.stGood }
-        : tone === 'low'
-          ? { cls: 'critical', icon: '!', text: t.stCritical }
-          : null
+        : tone === 'ok'
+          ? { cls: 'ok', icon: '≈', text: t.stOk }
+          : tone === 'low'
+            ? { cls: 'critical', icon: '!', text: t.stCritical }
+            : null
   const CurrentFlag = FLAGS[lang]
 
   return (

@@ -60,7 +60,8 @@ export const T = {
     loading: 'Yuklanmoqda…',
     stExcellent: "A'lo",
     stGood: 'Yaxshi',
-    stCritical: 'Past',
+    stOk: 'Normal',
+    stCritical: 'Kritik',
   },
   ru: {
     tagline: 'калькулятор среднего балла',
@@ -109,6 +110,7 @@ export const T = {
     loading: 'Загрузка…',
     stExcellent: 'Отлично',
     stGood: 'Хорошо',
+    stOk: 'Норм',
     stCritical: 'Критично',
   },
   en: {
@@ -158,6 +160,7 @@ export const T = {
     loading: 'Loading…',
     stExcellent: 'Excellent',
     stGood: 'Good',
+    stOk: 'OK',
     stCritical: 'Critical',
   },
 }
