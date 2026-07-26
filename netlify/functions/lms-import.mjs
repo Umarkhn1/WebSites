@@ -75,41 +75,27 @@ function parseStudent(html) {
   // Формат: Фамилия Имя Отчество [o‘g‘li/qizi] → имя это второе слово.
   const name = tokens[1] || tokens[0] || ''
 
-  // Профиль на /student/info: разметка неизвестна (div/dl/table), поэтому
-  // превращаем HTML в список текстовых сегментов и ищем пары «метка → значение».
-  const segs = html
-    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<[^>]+>/g, '\n')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-
-  // Находит значение по метке: значение после «:» в том же сегменте либо
-  // следующий непустой сегмент.
-  const findByLabel = (re) => {
-    for (let i = 0; i < segs.length; i++) {
-      const seg = segs[i]
-      if (!re.test(seg)) continue
-      const after = seg.replace(/^[^:]*:\s*/, '')
-      if (after && after !== seg && !/^[:\s]*$/.test(after)) return after.trim()
-      const next = segs[i + 1]
-      if (next && !/^[\p{L}\s]+:$/u.test(next)) return next.trim()
+  // Профиль на /student/info: данные лежат парами
+  // <span class="si-field-label">Метка</span><span class="si-field-value">Значение</span>.
+  const fields = {}
+  const re = /si-field-label"[^>]*>([^<]+)<\/span>\s*<span[^>]*si-field-value"[^>]*>([\s\S]*?)<\/span>/g
+  let pair
+  while ((pair = re.exec(html))) {
+    fields[strip(pair[1]).toLowerCase()] = strip(pair[2])
+  }
+  const findField = (rx) => {
+    for (const [label, value] of Object.entries(fields)) {
+      if (rx.test(label) && value) return value
     }
     return ''
   }
 
-  let group = findByLabel(/^(группа|guruh|guruhi|group)\b/i)
-  // Направление / специальность / факультет.
-  let faculty = findByLabel(
-    /^(направление|yo['‘’`]?nalish|ta['‘’`]?lim\s*yo['‘’`]?nalishi|mutaxassislik|специальность|факультет|fakultet|faculty|direction)\b/i,
+  const group = findField(/групп|guruh|group/i)
+  // «Направление» (специальность/факультет) — то, что LMS показывает в профиле.
+  const faculty = findField(
+    /направлен|yo['‘’`]?nalish|ta['‘’`]?lim|mutaxassislik|специальн|факультет|fakultet|faculty|direction/i,
   )
-  const courseRaw = findByLabel(/^(курс|kurs|bosqich|course)\b/i)
-
-  // Запасной вариант: явные классы.
-  if (!group) group = strip((html.match(/si-student-group"[^>]*>([^<]+)</) || [])[1] || '')
-  if (!faculty) faculty = strip((html.match(/si-student-faculty"[^>]*>([^<]+)</) || [])[1] || '')
+  const courseRaw = findField(/^\s*(курс|kurs|bosqich|course)\s*$/i)
 
   const courseNum = parseInt(String(courseRaw).match(/\d+/)?.[0], 10)
   return { full, name, group, faculty, course: Number.isNaN(courseNum) ? '' : courseNum }
@@ -242,25 +228,7 @@ export const handler = async (event) => {
         headers: { 'User-Agent': UA, Cookie: cookieHeader(cookies) },
         redirect: 'manual',
       })
-      if (infoRes.status === 200) {
-        const infoHtml = await infoRes.text()
-        student = parseStudent(infoHtml)
-        // Временная диагностика разметки профиля (админ-только, перезаписывается).
-        try {
-          const segs = infoHtml
-            .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
-            .replace(/<[^>]+>/g, '\n')
-            .replace(/&nbsp;/g, ' ')
-            .split('\n')
-            .map((s) => s.trim())
-            .filter(Boolean)
-          await usersStore(event).setJSON('zz-debug-info', {
-            at: new Date().toISOString(),
-            parsed: student,
-            segs: segs.slice(0, 80),
-          })
-        } catch {}
-      }
+      if (infoRes.status === 200) student = parseStudent(await infoRes.text())
     } catch {}
 
     if (login_) await recordUser(event, login_, student, semesters)
