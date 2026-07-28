@@ -36,4 +36,24 @@ export function FlagEN() {
   )
 }
 
-export const FLAGS = { uz: FlagUZ, ru: FlagRU, en: FlagEN }
+export function FlagKAA() {
+  return (
+    <svg viewBox="0 0 30 20" className="flag" aria-hidden="true">
+      <rect width="30" height="20" fill="#ffc90e" />
+      <rect width="30" height="6.9" fill="#0099b5" />
+      <rect y="13.1" width="30" height="6.9" fill="#1eb53a" />
+      <rect y="6.9" width="30" height="0.55" fill="#ce1126" />
+      <rect y="12.55" width="30" height="0.55" fill="#ce1126" />
+      <circle cx="4.6" cy="3.4" r="1.9" fill="#fff" />
+      <circle cx="5.5" cy="3.4" r="1.6" fill="#0099b5" />
+      <g fill="#fff">
+        <circle cx="8.1" cy="1.9" r="0.4" />
+        <circle cx="9.6" cy="2.9" r="0.4" />
+        <circle cx="8.1" cy="4.9" r="0.4" />
+        <circle cx="9.6" cy="3.9" r="0.4" />
+      </g>
+    </svg>
+  )
+}
+
+export const FLAGS = { uz: FlagUZ, ru: FlagRU, en: FlagEN, kaa: FlagKAA }
