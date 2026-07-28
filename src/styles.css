@@ -830,14 +830,29 @@ select.field {
 
 /* ---------- course switcher ---------- */
 .course-tabs {
+  position: relative;
   display: flex;
-  gap: 6px;
   background: var(--field);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 5px;
 }
+/* Скользящая подсветка едет под активный курс. */
+.course-tab-ind {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 0;
+  border-radius: 8px;
+  background: linear-gradient(120deg, var(--primary), var(--primary-2));
+  box-shadow: 0 4px 12px rgba(53, 119, 212, 0.28);
+  transition: transform 0.34s cubic-bezier(0.34, 1.4, 0.5, 1), width 0.34s cubic-bezier(0.34, 1.4, 0.5, 1);
+  z-index: 0;
+  pointer-events: none;
+}
 .course-tab {
+  position: relative;
+  z-index: 1;
   flex: 1;
   border: none;
   background: transparent;
@@ -848,14 +863,36 @@ select.field {
   font-weight: 600;
   color: var(--ink-soft);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: color 0.25s ease;
 }
 .course-tab:hover {
   color: var(--primary);
 }
 .course-tab.active {
-  background: linear-gradient(120deg, var(--primary), var(--primary-2));
   color: #fff;
+}
+
+/* Плавная смена содержимого при переходе курс → курс. */
+.course-pane {
+  animation: coursePane 0.36s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+@keyframes coursePane {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--dir, 1) * 18px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .course-tab-ind {
+    transition: none;
+  }
+  .course-pane {
+    animation: none;
+  }
 }
 
 .sem-list {

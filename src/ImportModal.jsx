@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 function gpaOf(list) {
   let cr = 0
@@ -33,6 +33,23 @@ export default function ImportModal({ t, session, onClose, onApply, onAuth, onEx
   const [error, setError] = useState('')
   const [courses, setCourses] = useState([])
   const [sel, setSel] = useState(0)
+  const [dir, setDir] = useState(1) // направление перехода: 1 вперёд, -1 назад
+  const tabsRef = useRef(null)
+  const [ind, setInd] = useState({ left: 0, width: 0 })
+
+  // Плавно двигаем подсветку под активный курс, измеряя реальную позицию кнопки.
+  useLayoutEffect(() => {
+    const box = tabsRef.current
+    if (!box) return
+    const active = box.querySelector('.course-tab.active')
+    if (active) setInd({ left: active.offsetLeft, width: active.offsetWidth })
+  }, [sel, courses])
+
+  const pickCourse = (i) => {
+    if (i === sel) return
+    setDir(i > sel ? 1 : -1)
+    setSel(i)
+  }
 
   const handleData = (data) => {
     const grouped = groupCourses(data.semesters)
@@ -191,53 +208,59 @@ export default function ImportModal({ t, session, onClose, onApply, onAuth, onEx
 
         {step === 'pick' && current && (
           <div className="modal-body">
-            <div className="course-tabs">
+            <div className="course-tabs" ref={tabsRef}>
+              <span
+                className="course-tab-ind"
+                style={{ transform: `translateX(${ind.left}px)`, width: ind.width }}
+              />
               {courses.map((c, i) => (
                 <button
                   key={c.course}
                   className={'course-tab' + (i === sel ? ' active' : '')}
-                  onClick={() => setSel(i)}
+                  onClick={() => pickCourse(i)}
                 >
                   {t.courseLabel(c.course)}
                 </button>
               ))}
             </div>
 
-            <div className="gpa-summary">
-              <div className="gpa-box">
-                <span className="gpa-box-label">{t.courseGpa}</span>
-                <span className="gpa-box-val">{courseGraded ? courseGpa.toFixed(2) : '—'}</span>
+            <div className="course-pane" key={sel} style={{ '--dir': dir }}>
+              <div className="gpa-summary">
+                <div className="gpa-box">
+                  <span className="gpa-box-label">{t.courseGpa}</span>
+                  <span className="gpa-box-val">{courseGraded ? courseGpa.toFixed(2) : '—'}</span>
+                </div>
+                <div className="gpa-box accent">
+                  <span className="gpa-box-label">{t.totalGpa}</span>
+                  <span className="gpa-box-val">{totalGraded ? totalGpa.toFixed(2) : '—'}</span>
+                </div>
               </div>
-              <div className="gpa-box accent">
-                <span className="gpa-box-label">{t.totalGpa}</span>
-                <span className="gpa-box-val">{totalGraded ? totalGpa.toFixed(2) : '—'}</span>
-              </div>
-            </div>
 
-            <p className="modal-hint">{t.hintPick}</p>
-            <div className="sem-list">
-              {current.semesters.map((s) => {
-                const g = gpaOf(s.courses)
-                const gradedN = s.courses.filter((x) => x.grade).length
-                return (
-                  <button key={s.num} className="sem-item" onClick={() => onApply(s.courses)}>
-                    <span className="sem-num">{s.num}</span>
-                    <span className="sem-info">
-                      <span className="sem-label">{t.semLabel(s.num)}</span>
-                      <span className="sem-sub">
-                        {t.subjects(s.courses.length)}
-                        {gradedN < s.courses.length ? ` · ${t.graded(gradedN)}` : ''}
+              <p className="modal-hint">{t.hintPick}</p>
+              <div className="sem-list">
+                {current.semesters.map((s) => {
+                  const g = gpaOf(s.courses)
+                  const gradedN = s.courses.filter((x) => x.grade).length
+                  return (
+                    <button key={s.num} className="sem-item" onClick={() => onApply(s.courses)}>
+                      <span className="sem-num">{s.num}</span>
+                      <span className="sem-info">
+                        <span className="sem-label">{t.semLabel(s.num)}</span>
+                        <span className="sem-sub">
+                          {t.subjects(s.courses.length)}
+                          {gradedN < s.courses.length ? ` · ${t.graded(gradedN)}` : ''}
+                        </span>
                       </span>
-                    </span>
-                    <span className="sem-gpa">{gradedN ? g.toFixed(2) : '—'}</span>
-                  </button>
-                )
-              })}
-            </div>
+                      <span className="sem-gpa">{gradedN ? g.toFixed(2) : '—'}</span>
+                    </button>
+                  )
+                })}
+              </div>
 
-            <button className="btn btn-accent full" onClick={() => onApply(totalList)}>
-              {t.importAll(current.course)}
-            </button>
+              <button className="btn btn-accent full" onClick={() => onApply(totalList)}>
+                {t.importAll(current.course)}
+              </button>
+            </div>
 
             <button
               className="modal-logout"
