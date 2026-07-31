@@ -2,7 +2,7 @@
   "name": "tuit-gpa-calculator",
   "private": true,
   "version": "2.0.0",
-  "author": "Umarkhn1",
+  "author": "umarkhn_1",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -331,7 +331,7 @@ export default function App() {
         <p className="foot-by">
           {t.footerBy}{' '}
           <a href="https://t.me/umarkhn_1" target="_blank" rel="noreferrer">
-            Umarkhn1
+            umarkhn_1
           </a>
         </p>
       </footer>
